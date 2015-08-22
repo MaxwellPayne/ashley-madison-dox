@@ -27,4 +27,31 @@ class AmQuery():
                                           "and am_am_member.last_name = '" + lname + "';")
         return AmMember(self.conn, *result) if result is not None else None
     
-        
+    def closest_to(self):
+        """Find closest users to point within certain radius"""
+        # TODO: implement these as function parameters
+        lat, lon = 40.419358, -86.877356
+        limit = 10
+        max_radius_in_miles = 100
+        result = util.fetchall(self.conn.cursor(),
+                               "SELECT id, first_name, last_name, email, " +
+                               "X(location) AS lat, Y(location) AS lng, " + 
+                               # 3959 sets distance to miles
+                               "(3959 * " + 
+                               "acos(" +
+                                     "cos( radians(%f) )" % lat +
+                               "* cos( radians( X(location) ) ) " + 
+                               "* cos( radians( Y(location) ) - radians(%f) )" % lon +
+                               "+ sin( radians(%f) ) " % lat +
+                               "* sin( radians( X(location) ) ) ) ) AS distance " +
+                               "FROM am_spatial_lookup " +
+                               "INNER JOIN am_am_member " +
+                               "ON am_am_member.id = am_spatial_lookup.pnum " +
+                               "INNER JOIN aminno_member_email " +
+                               "ON am_am_member.id = aminno_member_email.pnum " + 
+                               "WHERE last_name IS NOT NULL " +
+                               "AND last_name != '<paid_delete>' " + 
+                               "HAVING distance <= %f " % max_radius_in_miles + 
+                               "ORDER BY distance ASC " + 
+                               "LIMIT %d;" % limit)
+        return tuple(result)

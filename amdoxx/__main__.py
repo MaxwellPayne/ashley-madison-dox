@@ -16,3 +16,5 @@ if __name__ == '__main__':
     darren = query.search_email(_darren_email)
     print darren.opento
     print darren.lookingfor
+
+    print query.closest_to()
